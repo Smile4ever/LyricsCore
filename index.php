@@ -1,8 +1,7 @@
 <?php
 // TODO:
-// verify many songs
 // fix premium: http://hugsmile.eu/lyricscore/api/v1/?filename=Tina%20Turner%20-%20Rolling%20On%20The%20River&format=text
-// remove [ and ] as well
+// http://lyricscore.eu5.org/api/testing/?filename=David%20Guetta%20-%20Play%20Hard%20ft.%20Ne-Yo,%20Akon%20&mode=debug&format=xml
 
 header('Content-Type: text/html; charset=utf-8');
 $format = get_parameter("format");
@@ -45,12 +44,12 @@ if($filename == ""){
 	$artist = get_artist($filename);
 	$title = get_title($filename);
 	$lyrics = get_lyrics($artist, $title);
-	if(trim($lyrics) == ""){
+	/*if(trim($lyrics) == ""){
 		$artist_new = $title;
 		$title = $artist;
 		$artist = $artist_new;
 		$lyrics = get_lyrics($artist, $title);
-	}
+	}*/
 }
 
 //$lyrics = fetch_lyrics("http://www.lyrics.com/hello-lyrics-adele.html");
@@ -101,7 +100,6 @@ switch ($format) {
 }
 
 function get_artist($filename){	
-	//$filename = urldecode($filename);
 	$filename = str_replace(chr(38), "", $filename);
 	
 	//$filename = str_replace("%20"," ", $filename); // replace space
@@ -113,18 +111,20 @@ function get_artist($filename){
 	$filename = str_replace("%27", "", $filename); //replace single quote by nothing
 	$filename = str_replace("'", "", $filename); //replace single quote by nothing
 	
-	//$filename = str_replace("%21","!", $filename); //replace exclamation mark by exclamation mark :)
 	$filename = preg_replace('/\\.[^.\\s]{3,4}$/', '', $filename); // remove extension
 	$filename = str_replace(" _ ", " and ", $filename); //replace underscore with spaces by and
 	$filename = str_replace("!", "", $filename); //replace exclamation mark by nothing
-	
+	$filename = str_replace("ç", "c", $filename);
+
 	$filename = preg_replace('/Ft\..*\-/',"-", $filename); // remove Ft.
 	$filename = preg_replace('/ft\..*\-/',"-", $filename); // remove ft.
-	$filename = preg_replace('/Feat\..*\-/',"-", $filename); // remove Feat.
-	$filename = preg_replace('/feat\..*\-/',"-", $filename); // remove feat.
+	$filename = preg_replace('/Feat.*\-/',"-", $filename); // remove Feat
+	$filename = preg_replace('/feat.*\-/',"-", $filename); // remove feat
 	$filename = preg_replace('/Featuring.*\-/', "-", $filename); // remove featuring
 	$filename = preg_replace('/featuring.*\-/', "-", $filename); // remove featuring
 	
+	$filename = preg_replace('/\[.*\]/', '', $filename); // remove square brackets
+		
 	$spacepos = strpos($filename, " ");
 	$hyphenpos = strpos($filename, "-");
 	
@@ -134,10 +134,18 @@ function get_artist($filename){
 	}
 	
 	if($spacepos == false){
-		debug_print("spacepos is $spacepos");
-		return ""; // invalid things (for example "-IRememberYou")
+		if(substr_count($filename, "_") > 1){
+			debug_print("number of underscores > 1 (artist)");
+			$filename = str_replace("_", " ", $filename);
+		}else{
+			debug_print("spacepos artist is $spacepos");
+			return ""; // invalid things (for example "-IRememberYou")
+		}
 	}
-		
+	
+	$filename = str_replace("- Official Video", "", $filename);
+	$filename = str_replace("Official Video", "", $filename);
+	
 	if($hyphenpos + 1 < $spacepos){
 		$oldpos = $hyphenpos;
 		$hyphenpos = strpos($filename, "-", $spacepos); // was not the right hyphen (a-ha)
@@ -183,16 +191,10 @@ function get_artist($filename){
 }
 
 function get_title($filename){
-	$filename = str_replace(" - Lyrics", "", $filename);
-	//$filename = str_replace("@.*","", $filename);
-	$filename = str_replace(" with Lyrics","", $filename); // remove with lyrics
-	$filename = str_replace("_ll","'ll", $filename);
-    $filename = str_replace("w_ lyrics","", $filename); // remove w_ lyrics  
-   	$filename = str_replace(" Lyrics", "", $filename);
-   	$filename = str_replace(" HD", "", $filename);
-   	$filename = str_replace(" HQ", "", $filename);
+
    	$filename = str_replace("!", "", $filename); //replace exclamation mark by nothing
 	$filename = preg_replace('/\\.[^.\\s]{3,4}$/', '', $filename); // remove extension
+	$filename = preg_replace('/\[.*\]/', '', $filename); // remove square brackets
 	
 	//$filename_featuring = $filename;
 	
@@ -204,18 +206,37 @@ function get_title($filename){
 	}
 	
 	if($spacepos == false){
-		return ""; // invalid things (for example "-IRememberYou")
+		if(substr_count($filename, "_") > 1){
+			debug_print("number of underscores > 1 (title)");
+			$filename = str_replace("_", " ", $filename);
+		}else{
+			debug_print("spacepos artist is $spacepos");
+			return ""; // invalid things (for example "-IRememberYou")
+		}
 	}
 	
+	$filename = str_replace(" - Lyrics", "", $filename);
+	$filename = str_replace(" with Lyrics","", $filename); // remove with lyrics
+	$filename = str_replace("_ll","'ll", $filename);
+    $filename = str_replace("w_ lyrics","", $filename); // remove w_ lyrics  
+   	$filename = str_replace(" Lyrics", "", $filename);
+   	$filename = str_replace(" HD", "", $filename);
+   	$filename = str_replace(" HQ", "", $filename);
+	$filename = str_replace("- Official Video", "", $filename);
+	$filename = str_replace("Official Video", "", $filename);
+	$filename = str_replace("official video", "", $filename);
+	$filename = str_replace("Music Video", "", $filename);
+	$filename = str_replace(" Live", "", $filename);
+
 	// remove featuring
 	$filename_lower = strtolower($filename);
 	if(strpos($filename_lower, "ft.", $pos)){
 		$filename = preg_replace('/Ft\..*/',"", $filename); // remove Ft.
 		$filename = preg_replace('/ft\..*/',"", $filename); // remove ft.
 	}		
-	if(strpos($filename_lower, "feat.", $pos)){
-		$filename = preg_replace('/Feat\..*/',"", $filename); // remove Feat.
-		$filename = preg_replace('/feat\..*/',"", $filename); // remove feat.
+	if(strpos($filename_lower, "feat", $pos)){
+		$filename = preg_replace('/Feat.*/',"", $filename); // remove Feat
+		$filename = preg_replace('/feat.*/',"", $filename); // remove feat
 	}
 	if(strpos($filename_lower, "featuring.", $pos)){
 		$filename = preg_replace('/Featuring.*/', "", $filename); // remove Featuring
@@ -571,11 +592,18 @@ function get_lyrics($artist_x, $title_x){
 		debug_print("azlyrics.com: $url");
 		$lyric_string = fetch_lyrics($url);
 		
-		if(is_lyric_page($lyric_string) == false && strpos($artist_az, 'the') == 0){
+		if(is_lyric_page($lyric_string) == false && strpos($artist_az, 'the') == 1){
 			$new_artist_az = str_replace('the-','', $artist_az);
 			$url = "http://www.azlyrics.com/lyrics/" . substr($new_artist_az, 3) . "/" . $title_az .".html";
 			$lyric_string = fetch_lyrics($url);
 			debug_print("azlyrics.com (THE): $url");
+		}
+		if(is_lyric_page($lyric_string) == false && strpos($artist_az, 'and') > 0){
+			$andlocation = strpos($artist_az, "and");
+			$new_artist_az = substr($artist_az, 0, $andlocation); //     preg_replace('and.*', '', $artist_az);
+			$url = "http://www.azlyrics.com/lyrics/" . $new_artist_az . "/" . $title_az .".html";
+			$lyric_string = fetch_lyrics($url);
+			debug_print("azlyrics.com (without AND part): $url");
 		}
 	}
 	
@@ -595,7 +623,7 @@ function get_lyrics($artist_x, $title_x){
 	$title_x_normal = str_replace("_", "-", $title_x);
 	if(is_lyric_page($lyric_string) == false){
 		//http://songteksten.net/search/title.html?q=climbing+to+the+top&type=title
-		$url = "http://songteksten.net/search/title.html?q=" . str_replace("-", "+", $title_x)."&type=title";
+		$url = "http://songteksten.net/search/title.html?q=" . str_replace("-", "+", $title_x)."&amp;type=title";
 		debug_print("songteksten.net: $url");
 		$data = file_get_contents($url);
 		
@@ -615,7 +643,7 @@ function get_lyrics($artist_x, $title_x){
 		$source = "";
 	}
 		
-	return str_replace("<br>", "<br/>", $lyric_string); // Firefox does not like <br>
+	return str_replace("<br>", "<br/>", clean_lyrics($lyric_string)); // Firefox does not like <br>
 }
 
 function is_lyric_page($lyric_string){
@@ -864,4 +892,35 @@ function fetch_lyrics($url){
 	}
 	
 	return "";
+}
+
+function clean_lyrics($lyrics_text_input){
+	$lyrics_text_input = trim_all($lyrics_text_input, "\\x00-\\x09");
+	$lyrics_text_input = trim_all($lyrics_text_input, "\\x0B-\\x0C");
+	$lyrics_text_input = trim_all($lyrics_text_input, "\\x0E-\\x1F");
+	
+	$lyrics_text_input = trim_all($lyrics_text_input, "\\x0D\\x0A", "\n"); // \r\n
+	
+	return $lyrics_text_input;
+}
+
+// http://pageconfig.com/post/remove-undesired-characters-with-trim_all-php
+function trim_all( $str , $what = NULL , $with = ' ' )
+{
+    if( $what === NULL )
+    {
+         //  Character      Decimal      Use
+         //  "\0"            0           Null Character
+         //  "\t"            9           Tab
+         //  "\n"           10           New line
+         //  "\x0B"         11           Vertical Tab
+         //  "\r"           13           New Line in Mac
+         //  " "            32           Space
+          
+         //$what   = "\\x00-\\x20";    //all white-spaces and control chars
+         
+         $what = "\\x09";
+    }
+       
+    return trim( preg_replace( "/[".$what."]+/" , $with , $str ) , $what );
 }
