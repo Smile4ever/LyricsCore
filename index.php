@@ -116,6 +116,7 @@ function get_artist($filename){
 	//$filename = str_replace("%21","!", $filename); //replace exclamation mark by exclamation mark :)
 	$filename = preg_replace('/\\.[^.\\s]{3,4}$/', '', $filename); // remove extension
 	$filename = str_replace(" _ ", " and ", $filename); //replace underscore with spaces by and
+	$filename = str_replace("!", "", $filename); //replace exclamation mark by nothing
 	
 	$filename = preg_replace('/Ft\..*\-/',"-", $filename); // remove Ft.
 	$filename = preg_replace('/ft\..*\-/',"-", $filename); // remove ft.
@@ -190,6 +191,7 @@ function get_title($filename){
    	$filename = str_replace(" Lyrics", "", $filename);
    	$filename = str_replace(" HD", "", $filename);
    	$filename = str_replace(" HQ", "", $filename);
+   	$filename = str_replace("!", "", $filename); //replace exclamation mark by nothing
 	$filename = preg_replace('/\\.[^.\\s]{3,4}$/', '', $filename); // remove extension
 	
 	//$filename_featuring = $filename;
