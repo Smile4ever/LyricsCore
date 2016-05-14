@@ -226,7 +226,7 @@ function get_title($filename){
 	$filename = str_replace("Official Video", "", $filename);
 	$filename = str_replace("official video", "", $filename);
 	$filename = str_replace("Music Video", "", $filename);
-	$filename = str_replace(" Live", "", $filename);
+	//$filename = str_replace(" Live", "", $filename);
 
 	// remove featuring
 	$filename_lower = strtolower($filename);
