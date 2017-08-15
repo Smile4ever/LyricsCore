@@ -30,13 +30,19 @@ outputs:
 Hosted PHP API
 ==============
 
-If you have uploaded index.php to lyricscore.eu5.org/api/v1/, you can use the API as follows: 
+It is advised you host the API yourself and you keep up to date with the changes made. That way you will have optimal coverage of as many songs as possible, and you won't be confronted by downtime on lyricscore.eu5.org or lyricscore.cmshost.nl.
+
+You can host the API yourself by uploading index.php and simple_html_dom.php to some folder on your FTP host.
+
+If the index.php and simple_html_dom.php are uploaded to lyricscore.eu5.org/api/v1/, you can use the API as follows: 
   
   http://lyricscore.eu5.org/api/v1/?filename=Roxette%20-%20Dangerous
 
-It is advised you host the API yourself and you keep up to date with the changes made. That way you will have optimal coverage of as many songs as possible, and you won't be confronted by downtime on lyricscore.eu5.org.
+I strongly advise to have multiple hosted LyricsCore API's at your disposal, in case one goes down.
 
-I also strongly advise to have multiple hosted LyricsCore API's at your disposal, in case one goes down.
+If you don't want to host the API yourself, you can use these URLs:
+* http://lyricscore.eu5.org/api/v1/
+* http://lyricscore.cmshost.nl/api/v1/
 
 Parameters and values
 =====================
@@ -56,8 +62,8 @@ Example filenames:
 * "Roxette-Dangerous"
 
 Controlling the output:
-* format ['', text, xml, json] (empty means html, use one of the three defined formats in your application)
-* mode ['', 'debug'] (empty means normal operation, so the debug mode is disabled)
+* format [''', text, xml, json] (empty means html, use one of the three defined formats in your application)
+* mode [''', 'debug'] (empty means normal operation, so the debug mode is disabled)
 
 If you use the LyricsCore API without hosting it, you need to use CAPITAL LETTERS for the parameters. Otherwise, the parameter names are the same.
 
