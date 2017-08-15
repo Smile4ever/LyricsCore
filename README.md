@@ -62,8 +62,8 @@ Example filenames:
 * "Roxette-Dangerous"
 
 Controlling the output:
-* format [''', text, xml, json] (empty means html, use one of the three defined formats in your application)
-* mode [''', 'debug'] (empty means normal operation, so the debug mode is disabled)
+* format ["", "text", "xml", "json"] (empty means html, use one of the three defined formats in your application)
+* mode ["", "debug"] (empty means normal operation, so the debug mode is disabled)
 
 If you use the LyricsCore API without hosting it, you need to use CAPITAL LETTERS for the parameters. Otherwise, the parameter names are the same.
 
