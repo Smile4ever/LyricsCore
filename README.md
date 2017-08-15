@@ -6,7 +6,7 @@ LyricsCore is a lyrics API written in PHP. It fetches the lyrics text from many 
 Examples
 ========
 
-The LyricsCore API can be used like this from the Linux command line:
+The LyricsCore API can be used like this from the (Linux) command line:
 
 	FORMAT=text FILENAME="Roxette - Dangerous" php index.php
 
@@ -62,10 +62,12 @@ Example filenames:
 * "Roxette-Dangerous"
 
 Controlling the output:
-* format ["", "text", "xml", "json"] (empty means html, use one of the three defined formats in your application)
+* format ["", "datatext", "text", "xml", "json"] (empty means html, use one of the four defined formats in your application - use lower case values)
 * mode ["", "debug"] (empty means normal operation, so the debug mode is disabled)
 
-If you use the LyricsCore API without hosting it, you need to use CAPITAL LETTERS for the parameters. Otherwise, the parameter names are the same.
+Attention:
+* Use lower case values for the format and mode parameters, e.g. "json" or "debug"
+* Use CAPITAL LETTERS for the parameter names when calling LyricsCore from the command line, e.g. "FORMAT" or "MODE"
 
 Usage in an external program
 ============================

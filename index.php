@@ -78,24 +78,10 @@ switch ($format) {
         print json_encode($data, JSON_PRETTY_PRINT);
         break;
     case "text":
-		//$lyrics = str_replace(["\r\n", "\r", "\n"], "\n", $lyrics);
-//		if($source == "LyricsMania"){
-//			$lyrics = str_replace("\r\n\r\n\r\n", "\n\n", $lyrics);
-//			$lyrics = preg_replace('/[\x00-\x09]/', '', $lyrics);
-//		}
-		
-		//if($source == "MetroLyrics"){
-			//$lyrics = preg_replace('/\<br(\s*)?\/?\>/i', PHP_EOL, $lyrics);
-			//$lyrics = preg_replace('/\<p(\s*)?\/?\>/i', PHP_EOL, $lyrics);
-//$lyrics = str_replace("</p>", "\n\n", $lyrics);
-			// TODO: check if the first line > 150 chars, if so -> do not do this
-			//$lyricsnew = strip_tags(html_entity_decode($lyrics);
-			//$lyrics = preg_replace('/[\x0D]/', '\x0A', $lyrics);
-			
-//			print trim(strip_tags(html_entity_decode($lyrics)));
-		//}
-		//print $lyrics;
 		print get_text_from_unclean_html($lyrics);
+		break;
+	case "datatext":
+		print $source . "\n" . get_text_from_unclean_html($lyrics);
 		break;
     default:
 		if($source == "LyricsMania"){
@@ -106,6 +92,7 @@ switch ($format) {
 }
 
 function get_text_from_unclean_html($unclean){
+	global $source;
 	if($source == "LyricsMania"){
 		$unclean = str_replace("\r\n\r\n\r\n", "\n\n", $unclean);
 		$unclean = preg_replace('/[\x00-\x09]/', '', $unclean);
@@ -716,6 +703,9 @@ function fetch_lyrics($url){
 	$golyr = strpos($url, 'golyr');
 	$songteksten = strpos($url, 'songteksten.net');
 
+	$mode = get_parameter("mode");
+	if($mode != "debug")
+		error_reporting(E_ERROR | E_PARSE);
 	$data = file_get_contents($url);
 	
 	//$data = string.gsub(data, "&#(%d+)", string.char);
@@ -724,10 +714,20 @@ function fetch_lyrics($url){
 		//MetroLyrics
 		$source="MetroLyrics";
 		
+		if($data == "") return "";
 		$html = str_get_html($data);
-		$lyrics_body_text = $html->find('div[id=lyrics-body-text]'); 
-		$verses = $lyrics_body_text[0]->find('p[class=verse]');
-		return $verses;
+		
+		//$lyrics_body_text = $html->find('div[id=lyrics-body-text]');
+	
+		$verses = $html->find('p[class=verse]');;
+
+		$metrolyrics_text = "";
+		foreach ($verses as &$verse) {
+			$metrolyrics_text = $metrolyrics_text . str_replace("<br>", "\n", $verse);
+		}
+
+		return str_replace("\n ", "\n", $metrolyrics_text); 
+		//return $verses;
 	}
 	// LyricsMania is very slow
 	if($lyricsmania){
