@@ -1,4 +1,6 @@
 <?php
+include 'simple_html_dom.php';
+
 // TODO:
 // fix premium: http://hugsmile.eu/lyricscore/api/v1/?filename=Tina%20Turner%20-%20Rolling%20On%20The%20River&format=text
 // http://lyricscore.eu5.org/api/testing/?filename=David%20Guetta%20-%20Play%20Hard%20ft.%20Ne-Yo,%20Akon%20&mode=debug&format=xml
@@ -56,9 +58,12 @@ if($filename == ""){
 
 switch ($format) {
     case "xml":
-		if($source == "LyricsMania"){
+		/*if($source == "LyricsMania"){
 			$lyrics = str_replace(["\r\n", "\r", "\n"], "<br/>", $lyrics);
-		}
+		}*/
+		
+		//$lyrics = str_replace("</p>", "\n\n", $lyrics);
+		$lyrics = str_replace("\n", "<br />", get_text_from_unclean_html($lyrics));
         print "<artist>" . str_replace("&", "&amp;", $artist) . "</artist><title>". str_replace("&", "&amp;", $title) ."</title><source>$source</source><url>$url</url><lyrics>$lyrics</lyrics></song>";
         break;
     case "json":
@@ -74,22 +79,23 @@ switch ($format) {
         break;
     case "text":
 		//$lyrics = str_replace(["\r\n", "\r", "\n"], "\n", $lyrics);
-		if($source == "LyricsMania"){
-			$lyrics = str_replace("\r\n\r\n\r\n", "\n\n", $lyrics);
-			$lyrics = preg_replace('/[\x00-\x09]/', '', $lyrics);
-		}
+//		if($source == "LyricsMania"){
+//			$lyrics = str_replace("\r\n\r\n\r\n", "\n\n", $lyrics);
+//			$lyrics = preg_replace('/[\x00-\x09]/', '', $lyrics);
+//		}
 		
 		//if($source == "MetroLyrics"){
 			//$lyrics = preg_replace('/\<br(\s*)?\/?\>/i', PHP_EOL, $lyrics);
 			//$lyrics = preg_replace('/\<p(\s*)?\/?\>/i', PHP_EOL, $lyrics);
-			$lyrics = str_replace("</p>", "\n\n", $lyrics);
+//$lyrics = str_replace("</p>", "\n\n", $lyrics);
 			// TODO: check if the first line > 150 chars, if so -> do not do this
 			//$lyricsnew = strip_tags(html_entity_decode($lyrics);
 			//$lyrics = preg_replace('/[\x0D]/', '\x0A', $lyrics);
 			
-			print trim(strip_tags(html_entity_decode($lyrics)));
+//			print trim(strip_tags(html_entity_decode($lyrics)));
 		//}
 		//print $lyrics;
+		print get_text_from_unclean_html($lyrics);
 		break;
     default:
 		if($source == "LyricsMania"){
@@ -97,6 +103,17 @@ switch ($format) {
 		}
         print $lyrics;
         break;
+}
+
+function get_text_from_unclean_html($unclean){
+	if($source == "LyricsMania"){
+		$unclean = str_replace("\r\n\r\n\r\n", "\n\n", $unclean);
+		$unclean = preg_replace('/[\x00-\x09]/', '', $unclean);
+	}
+	
+	$unclean = str_replace("</p>", "\n\n", $unclean);
+		
+	return trim(strip_tags(html_entity_decode($unclean)));
 }
 
 function get_artist($filename){	
@@ -643,7 +660,7 @@ function get_lyrics($artist_x, $title_x){
 		$source = "";
 	}
 		
-	return str_replace("<br>", "<br/>", clean_lyrics($lyric_string)); // Firefox does not like <br>
+	return clean_lyrics($lyric_string);
 }
 
 function is_lyric_page($lyric_string){
@@ -706,43 +723,18 @@ function fetch_lyrics($url){
 	if($metro_pos){
 		//MetroLyrics
 		$source="MetroLyrics";
-		$a = strpos($data, 'lyrics-body-text');
-		if($a == false){
-			debug_print_importance("(warning) lyrics-body-text not found at $url", "extrainfo");
-			return "";
-		}
 		
-		// without : http://www.metrolyrics.com/teardrops-lyrics-womack-womack.html
-		// with    : http://www.metrolyrics.com/hello-lyrics-adele.html
-		$midsong = strpos($data, '<div id="mid-song-discussion"');
-		if($midsong){
-			debug_print("(info) removing mid-song-discussion");
-			$seeall = strpos($data, "See all");
-			$midsongend = strpos($data, "</div>", $seeall);
-			$data = substr($data, 0, $midsong) . substr($data, $midsongend+6);
-		}
-		
-		$endofstring = '>';
-		$position = strpos($data, $endofstring, $a);
-		if($position == false){
-			debug_print("(warning) end of string not found");
-			return "";
-		}
-		
-		$b = strpos($data, "</div>", $a);
-		//page does not contain lyrics
-		if($b == false){
-			debug_print("(warning) end div not found");
-			return "";
-		}
-		return substr($data, $position+1,$b-1-$position);
+		$html = str_get_html($data);
+		$lyrics_body_text = $html->find('div[id=lyrics-body-text]'); 
+		$verses = $lyrics_body_text[0]->find('p[class=verse]');
+		return $verses;
 	}
-	// very slow
+	// LyricsMania is very slow
 	if($lyricsmania){
 		$source="LyricsMania";
 		$strong_text = "</strong>";
-		$data = str_replace('<div class="p402_premium">', '', $data);	
-	
+		$data = str_replace("\t", "", $data);
+		$data = str_replace("<div class=\"p402_premium\">\r\n<br>", "", $data);	
 		$lyrics_to = strpos($data, "Lyrics to");
 		if($lyrics_to == false){
 			return "";
@@ -753,24 +745,26 @@ function fetch_lyrics($url){
 		}
 		
 		$b = strpos($data, "</div>", $a + strlen($strong_text));
-		$lyricsresult = substr($data, $a+strlen($strong_text),$b-1-$a);
+		$lyricsresult = substr($data, $a+strlen($strong_text),$b-2-$a);
 		$lyricsresult = str_replace('</div>', '', $lyricsresult);
-
+		$lyricsresult = str_replace('<br>', "\n", $lyricsresult);
+		$lyricsresult = str_replace('<br> <br> <br>', '', $lyricsresult);
+		$lyricsresult = str_replace('<div class="fb-quotable">', '', $lyricsresult);
+		
 		return $lyricsresult;
 	}
 	if($lyricsmode){
 		$source="LyricsMode";
-		$a = strpos($data, '<p id="lyrics_text"');
+		$identifier = '<p id="lyrics_text" class="ui-annotatable">';
+		$a = strpos($data, $identifier);
 		if($a == false){
 			return "";
 		}
-		$endofstring = '>';
-		$position = strpos($data, $endofstring, $a);
-		if($position == false){
-			return "";
-		}
-		$b = strpos($data, "</p>", $a);
-		return substr($data, $position+1, $b-1-$position);
+		$b = strpos($data, "</p>", $a) + 4; // +4 includes </p>, which is a workaround for a missing letter (http://www.lyricsmode.com/lyrics/c/céline_dion/think_twice.html) (is compensated for by converting unclean html to clean text to clean html)
+		$lengthofidentifier = strlen($identifier);
+		$lyricsmode_result = substr($data, $a, $b-$a);
+		
+		return $lyricsmode_result;
 	}
 	if($sonichits){
 		$source="Sonic Hits";
