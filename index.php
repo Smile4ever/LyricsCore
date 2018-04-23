@@ -1,11 +1,13 @@
 <?php
 include 'simple_html_dom.php';
 
+// LyricsCore 23-04-2018
+
 // TODO:
 // fix premium: http://hugsmile.eu/lyricscore/api/v1/?filename=Tina%20Turner%20-%20Rolling%20On%20The%20River&format=text
 // http://lyricscore.eu5.org/api/testing/?filename=David%20Guetta%20-%20Play%20Hard%20ft.%20Ne-Yo,%20Akon%20&mode=debug&format=xml
 
-header('Content-Type: text/html; charset=utf-8');
+header('Content-Type: text/xml; charset=utf-8');
 $format = get_parameter("format");
 if($format == "xml"){
 	header('Content-Type: text/xml; charset=utf-8');
@@ -13,11 +15,11 @@ if($format == "xml"){
 if($format == "json"){
 	header('Content-Type: application/json; charset=utf-8');
 }
-if($format == "text"){
+if($format == "text" || $format == "datatext"){
 	header('Content-Type: text/plain; charset=utf-8');
 }
 if($format == ""){
-	header('Content-Type: text/html; charset=utf-8');
+	header('Content-Type: text/xml; charset=utf-8'); // handle HTML as XML to prevent free hosts from injecting scripts
 }
 $debugmsgs = array();
 //}
@@ -35,7 +37,7 @@ $source="";
 $url="";
 $filename = get_parameter("filename");
 
-if($format == "xml"){
+if($format == "xml" || $format == ""){
 	// allow for debug messages to appear in the XML structure if debug is enabled
 	print "<song>";
 }
@@ -87,7 +89,7 @@ switch ($format) {
 		if($source == "LyricsMania"){
 			$lyrics = str_replace(["\r\n", "\r", "\n"], "<br/>", $lyrics);
 		}
-        print $lyrics;
+        print $lyrics . "</song>";
         break;
 }
 
@@ -543,8 +545,12 @@ function get_lyrics($artist_x, $title_x){
 		$lower_artist_name = strtolower($artist); // (artist:get_text()) TODO: verify if this code block works
 		$lower_title = strtolower($title); //title:get_text())
 		$lower_lyric_string = strtolower($lyric_string);
-		$pos_author = strpos($lower_lyric_string, $lower_artist_name);
-		$pos_title = strpos($lower_lyric_string, $lower_title);
+		if($lower_artist_name != ""){
+			$pos_author = strpos($lower_lyric_string, $lower_artist_name);
+		}
+		if($lower_title != ""){
+			$pos_title = strpos($lower_lyric_string, $lower_title);
+		}
 		$pos_newline = strpos($lower_lyric_string, "\n");
 		
 		// TODO: verify if this works
