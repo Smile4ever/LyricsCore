@@ -48,6 +48,7 @@ if($filename == ""){
 	$artist = get_artist($filename);
 	$title = get_title($filename);
 	$lyrics = get_lyrics($artist, $title);
+	//$lyrics = fetch_lyrics("https://www.lyricsmania.com/compendium_lyrics_elder.html");
 	/*if(trim($lyrics) == ""){
 		$artist_new = $title;
 		$title = $artist;
@@ -95,13 +96,9 @@ switch ($format) {
 
 function get_text_from_unclean_html($unclean){
 	global $source;
-	if($source == "LyricsMania"){
-		$unclean = str_replace("\r\n\r\n\r\n", "\n\n", $unclean);
-		$unclean = preg_replace('/[\x00-\x09]/', '', $unclean);
-	}
 	
 	$unclean = str_replace("</p>", "\n\n", $unclean);
-		
+	
 	return trim(strip_tags(html_entity_decode($unclean)));
 }
 
@@ -197,7 +194,6 @@ function get_artist($filename){
 }
 
 function get_title($filename){
-
    	$filename = str_replace("!", "", $filename); //replace exclamation mark by nothing
 	$filename = preg_replace('/\\.[^.\\s]{3,4}$/', '', $filename); // remove extension
 	$filename = preg_replace('/\[.*\]/', '', $filename); // remove square brackets
@@ -699,7 +695,7 @@ function is_lyric_page($lyric_string){
 function fetch_lyrics($url){
 	global $source;
 	
-	$metro_pos = strpos($url, 'metrolyrics');
+	$metrolyrics = strpos($url, 'metrolyrics');
 	$lyricsmania = strpos($url, 'lyricsmania');
 	$lyricscom = strpos($url, 'lyrics.com');
 	$sonichits = strpos($url, 'sonichits');
@@ -714,10 +710,7 @@ function fetch_lyrics($url){
 		error_reporting(E_ERROR | E_PARSE);
 	$data = file_get_contents($url);
 	
-	//$data = string.gsub(data, "&#(%d+)", string.char);
-	
-	if($metro_pos){
-		//MetroLyrics
+	if($metrolyrics){
 		$source="MetroLyrics";
 		
 		if($data == "") return "";
@@ -733,32 +726,29 @@ function fetch_lyrics($url){
 		}
 
 		return str_replace("\n ", "\n", $metrolyrics_text); 
-		//return $verses;
 	}
-	// LyricsMania is very slow
+	
 	if($lyricsmania){
 		$source="LyricsMania";
-		$strong_text = "</strong>";
-		$data = str_replace("\t", "", $data);
-		$data = str_replace("<div class=\"p402_premium\">\r\n<br>", "", $data);	
-		$lyrics_to = strpos($data, "Lyrics to");
-		if($lyrics_to == false){
-			return "";
-		}
-		$a = strpos($data, $strong_text, $lyrics_to);
-		if($a == false){
-			return "";
-		}
 		
-		$b = strpos($data, "</div>", $a + strlen($strong_text));
-		$lyricsresult = substr($data, $a+strlen($strong_text),$b-2-$a);
-		$lyricsresult = str_replace('</div>', '', $lyricsresult);
-		$lyricsresult = str_replace('<br>', "\n", $lyricsresult);
-		$lyricsresult = str_replace('<br> <br> <br>', '', $lyricsresult);
-		$lyricsresult = str_replace('<div class="fb-quotable">', '', $lyricsresult);
+		$data = str_replace("<div class=\"p402_premium\"><br>", "<span></span>", $data);
+		$data = str_replace("<br>\t", "", $data); // for p402_premium
+		$data = str_replace("<br>", "\r\n", $data);
+		$data = str_replace("\n\r\n", "\r\n", $data);
+		$data = str_replace("\r\r\n", "\r\n", $data);
+
+		$html = str_get_html($data, true, true, DEFAULT_TARGET_CHARSET, false);
+		$lyricsbody = $html->find('div[class=lyrics-body]', 0);
 		
-		return $lyricsresult;
+		$lyricsbody->find('#video-musictory', 0)->outertext = '';
+		$lyricsbody->find('div[class=fb-quote]', 0)->outertext = '';
+		$lyricsbody->find('script', 0)->outertext = '';
+		
+		$html->save();
+
+		return $lyricsbody;
 	}
+	
 	if($lyricsmode){
 		$source="LyricsMode";
 		$identifier = '<p id="lyrics_text" class="ui-annotatable">';
@@ -772,6 +762,7 @@ function fetch_lyrics($url){
 		
 		return $lyricsmode_result;
 	}
+	
 	if($sonichits){
 		$source="Sonic Hits";
 		// TODO: verify if this works

@@ -1,5 +1,5 @@
 TODO
 ----
 
-Clean JSON
-Clean XML
+* Clean JSON
+* Clean XML
